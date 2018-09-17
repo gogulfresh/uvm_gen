@@ -4,57 +4,121 @@
 //------------------------------------------
 // Class Description
 //------------------------------------------
-class {:NAME:}_monitor #(type VIF_TYPE = virtual {:NAME:}_if) extends uvm_monitor;
+class {:NAME:}Cfg extends uvm_object;
+
+    //------------------------------------------
+    // Data Members
+    //------------------------------------------
+    // active or passive
+    uvm_active_passive_enum is_active = UVM_ACTIVE;
+
+    bit checksEnable = 1; // Control checking in monitor and interface.
+    bit coverageEnable = 1; // Control coverage in monitor and interface.
+
+    // UVM Factory Registration Macro
+    //
+    `uvm_object_utils_begin({:NAME:}Cfg)
+        `uvm_field_int(checksEnable, UVM_ALL_ON)
+        `uvm_field_int(coverageEnable, UVM_ALL_ON)
+    `uvm_object_utils_end
+
+
+    //------------------------------------------
+    // Constraint
+    //------------------------------------------
+
+    //------------------------------------------
+    // Methods
+    //------------------------------------------
+
+    function new(string name = "{:NAME:}Cfg");
+        super.new(name);
+    endfunction
+
+endclass:{:NAME:}Cfg
+
+//------------------------------------------
+// Class Description
+//------------------------------------------
+class {:NAME:}Monitor extends uvm_monitor;
 
     // Attributes
-    VIF_TYPE vif;
-    uvm_analysis_port #({:TRANSACTION:}) a_port;
-    //{:NAME:}_config     m_config;
+    virtual {:NAME:}If vif;
+    uvm_analysis_port #({:TRANSACTION:}) ap;
+    {:NAME:}Cfg     mCfg;
 
-    protected {:TRANSACTION:} tr;
+    protected {:TRANSACTION:} transCollected;
     event covTransaction;
 
     covergroup covTrans @covTransaction;
     endgroup : covTrans
 
-    `uvm_component_utils({:NAME:}_monitor#(VIF_TYPE))
+    `uvm_component_utils_begin({:NAME:}Monitor)
+        `uvm_field_object(mCfg, UVM_ALL_ON)
+    `uvm_component_utils_end
 
     ////////////////////////////////////////////////////////////////////////////////
     // Implementation
     //------------------------------------------------------------------------------
-    function new(string name="{:LOWERNAME:}_monitor", uvm_component parent=null);
+    function new(string name="{:LOWERNAME:}Monitor", uvm_component parent=null);
         super.new(name, parent);
-        this.a_port = new("a_port", this);
+        this.covTrans = new();
+        this.covTrans.set_inst_name({get_full_name(), ".covTrans"});
+        this.transCollected = {:TRANSACTION:}::type_id::create("transCollected");
+        this.mCfg = new();
+
+        this.ap = new("ap", this);
     endfunction: new
 
     function build_phase(uvm_phase phase);
         super.build_phase(phase);
 
-        //if (!(uvm_config_db#(virtual {:NAME:}If)::get(this, "", "{:NAME:}Vif", vif))) begin
-        //    `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".vif"})
-        //end
+        if (!(uvm_config_db #({:NAME:}Cfg)::get(this, "", "mCfg", mCfg))) begin
+            `uvm_fatal("CONFIG_LOAD", {get_full_name(), ".mCfg get failed!!!"})
+        end
+
+        if (!(uvm_config_db#(virtual {:NAME:}If)::get(this, "", "{:NAME:}Vif", vif))) begin
+            `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".vif"})
+        end
 
     endfunction : build_phase
 
     task run_phase(uvm_phase phase);
-        this.collect_transactions(phase); // collector task
+        this.CollectTransactions(phase); // collector task
     endtask: run_phase
 
-    task collect_transactions(uvm_phase phase);
+    task CollectTransactions(uvm_phase phase);
+        {:TRANSACTION:} transCollectedClone;
+
         forever begin
-            this.tr = {:TRANSACTION:}::type_id::create("tr");
             phase.raise_objection(this);
 
             this.BusToTransaction();
-            this.a_port.write(tr);
+            if (this.checksEnable) begin
+                this.performTransferChecks();
+            end
+
+            if (this.coverageEnable) begin
+                this.performTransferCoverage();
+            end
+
+            $cast(transCollectedClone, this.transCollected.clone());
+            this.ap.write(transCollectedClone);
 
             phase.drop_objection(this);
         end
-    endtask : collect_transactions
+    endtask : CollectTransactions
 
     function void BusToTransaction();
     endfunction : BusToTransaction
 
-endclass: {:NAME:}_monitor
+    function void PerformTransferCoverage();
+        -> this.covTransaction;
+    endfunction : PerformTransferCoverage
+
+    function void PerformTransferChecks();
+    endfunction : PerformTransferChecks
+
+endclass: {:NAME:}Monitor
 
 `endif

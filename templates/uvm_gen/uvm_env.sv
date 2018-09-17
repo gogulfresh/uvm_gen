@@ -1,13 +1,13 @@
-`ifndef _{:UPPERNAME:}_ENV_SV
-`define _{:UPPERNAME:}_ENV_SV
+`ifndef {:UPPERNAME:}_ENV_SV
+`define {:UPPERNAME:}_ENV_SV
 
 //------------------------------------------------------------------------------
 //
-// CLASS: {:NAME:}_env
+// CLASS: {:NAME:}Env
 //
 //------------------------------------------------------------------------------
-class {:NAME:}_env_config extends uvm_object;
-    // The following two bits are used to control whether checks and coverage are
+class {:NAME:}EnvCfg extends uvm_object;
+        // The following two bits are used to control whether checks and coverage are
     // done both in the bus monitor class and the interface
     bit intfChecksEnable = 1;
     bit intfCoverageEnable = 1;
@@ -16,20 +16,20 @@ class {:NAME:}_env_config extends uvm_object;
     // Control properties
     int unsigned numMasters = 1;
     int unsigned numSlaves = 1;
-    {:NAME:}_agent_config m_agent_config;
 
-endclass : {:NAME:}_env_config
+endclass : {:NAME:}EnvCfg
 
 //------------------------------------------------------------------------------
 //
-// CLASS: {:NAME:}_env
+// CLASS: {:NAME:}Env
 //
 //------------------------------------------------------------------------------
-class {:NAME:}_env extends uvm_env;
+class {:NAME:}Env extends uvm_env;
 
-    protected virtual interface {:NAME:}_if vif;
+    // Virtual Interface variable
+    protected virtual interface {:NAME:}If vif;
 
-    {:NAME:}_env_config m_config;
+    {:NAME:}EnvCfg mCfg;
 
     //------------------------------------------
     // Data Members
@@ -39,70 +39,71 @@ class {:NAME:}_env extends uvm_env;
     // Sub components
     //------------------------------------------
     // Agent instance handles
-    {:AGENT1:} m_{:AGENT1:}[];
-    {:AGENT2:} m_{:AGENT2:}[];
+    {:AGENT1:} m{:AGENT1:}[];
+    {:AGENT2:} m{:AGENT2:}[];
 
     // Virtual sequencer
-    <VSQR> m_vsqr;
+    <VSQR> mVirtualSequencer;
 
     // UVM Factory Registration Macro
-    `uvm_component_utils({:NAME:}_env)
+    `uvm_component_utils_begin({:NAME:}Env)
+    `uvm_component_utils_end
 
     {:if:REG1:}
     // Register blocks
-    {:REG1:}_ral {:REG1:}regmodel;
+    {:REG1:}RegModel m{:REG1:}RegModel;
     {:endif:REG1:}
 
     //------------------------------------------
     // Methods
     //------------------------------------------
-    extern function new (string name="{:NAME:}_env", uvm_component parent=null);
+    extern function new (string name="{:NAME:}Env", uvm_component parent=null);
     extern function void end_of_elaboration_phase (uvm_phase _phase);
     extern function void build_phase (uvm_phase _phase);
     extern function void connect_phase (uvm_phase phase);
 
-endclass : {:NAME:}_env
+endclass : {:NAME:}Env
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation
 //------------------------------------------------------------------------------
-function {:NAME:}_env::new (string name="{:NAME:}_env", uvm_component parent=null);
+function {:NAME:}Env::new (string name="{:NAME:}Env", uvm_component parent=null);
     super.new(name, parent);
 endfunction: new
 
 //------------------------------------------------------------------------------
-function void {:NAME:}_env::end_of_elaboration_phase (uvm_phase phase);
+function void {:NAME:}Env::end_of_elaboration_phase (uvm_phase phase);
     super.end_of_elaboration_phase(phase);
 endfunction
 
 //------------------------------------------------------------------------------
-function void {:NAME:}_env::build_phase (uvm_phase phase);
+function void {:NAME:}Env::build_phase (uvm_phase phase);
 
-    string inst_name;
+    string instName;
     // super.build(phase);
 
     // Configure
-    if(!uvm_config_db #({:NAME:}_env_config)::get(this, "", "m_env_config", m_config)) begin
-        `uvm_error("build_phase", "Unable to find {:NAME:}_env_config (m_config) in uvm_config_db")
+    if(!uvm_config_db #({:NAME:}EnvCfg)::get(this, "", "mEnvCfg", mCfg)) begin
+        `uvm_error("build_phase", "Unable to find mCfg in uvm_config_db")
     end
 
     // Create
-    m_{:AGENT1:} = new[m_config.numMasters];
-    for (int i = 0; i < m_config.numMasters; i++) begin
-        $sformat(inst_name, "m{:AGENT1:}[%0d]", i);
-        m_{:AGENT1:}[i] = {:AGENT1:}::type_id::create(inst_name, this);
+    m{:AGENT1:} = new[mCfg.numMasters];
+    for (int i = 0; i < mCfg.numMasters; i++) begin
+        $sformat(instName, "m{:AGENT1:}[%0d]", i);
+        m{:AGENT1:}[i] = {:AGENT1:}::type_id::create(instName, this);
     end
 
-    m_{:AGENT2:} = new[m_config.numSlaves];
-    for (int i = 0; i < m_config.numSlaves; i++) begin
-        $sformat(inst_name, "m{:AGENT2:}[%0d]", i);
-        m_{:AGENT2:}[i] = {:AGENT2:}::type_id::create(inst_name, this);
+    m{:AGENT2:} = new[mCfg.numSlaves];
+    for (int i = 0; i < mCfg.numSlaves; i++) begin
+        $sformat(instName, "m{:AGENT2:}[%0d]", i);
+        m{:AGENT2:}[i] = {:AGENT2:}::type_id::create(instName, this);
     end
 
     {:if:REG1:}
     // Create and build register blocks
-    regmodel = {:REG1:}_ral::type_id::create("{:REG1:}_ral", this);
-    regmodel.build();
+    m{:REG1:}Model = {:REG1:}RegModel::type_id::create("m{:REG1:}RegModel", this);
+    m{:REG1:}Model.build();
     {:endif:REG1:}
 
     `uvm_info("build_phase", $sformatf("%s built", get_full_name()))
@@ -110,7 +111,7 @@ function void {:NAME:}_env::build_phase (uvm_phase phase);
 endfunction
 
 //------------------------------------------------------------------------------
-function void {:NAME:}_env::connect_phase (uvm_phase phase);
+function void {:NAME:}Env::connect_phase (uvm_phase phase);
     // Connectivity if any
 
     {:if:REG1:}

@@ -1,15 +1,19 @@
-`ifndef _{:UPPERNAME:}_SEQ_ITEM_SV_
-`define _{:UPPERNAME:}_SEQ_ITEM_SV_
+`ifndef _{:UPPERNAME:}_ITEM_SV_
+`define _{:UPPERNAME:}_ITEM_SV_
 
 //------------------------------------------------------------------------------
 //
-// CLASS: {:NAME:}_seq_item
+// CLASS: {:NAME:}
 //
 //------------------------------------------------------------------------------
 
+class {:NAME:} extends uvm_sequence_item;
 
-class {:NAME:}_seq_item extends uvm_sequence_item;
-    `uvm_object_utils({:NAME:}_seq_item)
+    //------------------------------------------
+    // Field automation
+    //------------------------------------------
+    `uvm_object_utils_begin({:NAME:})
+    `uvm_object_utils_end
 
     //------------------------------------------
     // Data Members
@@ -25,45 +29,39 @@ class {:NAME:}_seq_item extends uvm_sequence_item;
     //------------------------------------------
     // Methods
     //------------------------------------------
-    extern function new(string name="{:NAME:}_seq_item");
+    extern function new(string name="{:NAME:}");
     extern function void   do_copy (uvm_object rhs);
-    extern function bit    do_compare (uvm_object rhs, uvm_comparer comparer);
+    extern function bit    do_compare (uvm_object rhs, uvm_comparer _comparer);
     extern function string convert2string ();
     extern function void   do_print (uvm_printer printer);
-    extern function void   do_pack (uvm_packer packer);
-    extern function void   do_unpack (uvm_packer packer);
-    extern function void   do_record (uvm_recorder recorder);
+    extern function void   do_pack (uvm_packer rhs);
+    extern function void   do_unpack (uvm_packer rhs);
 
-endclass : {:NAME:}_seq_item
+endclass : {:NAME:}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation
 //------------------------------------------------------------------------------
-function {:NAME:}_seq_item::new(string name="{:NAME:}_seq_item");
+function {:NAME:}::new(string name="{:NAME:}");
     super.new(name);
 endfunction : new
 
-function void {:NAME:}_seq_item::do_copy(uvm_object rhs);
+function void {:NAME:}::do_copy(uvm_object rhs);
 endfunction
 
-function bit {:NAME:}_seq_item::do_compare(uvm_object rhs, uvm_comparer comparer);
+function bit {:NAME:}::do_compare(uvm_object rhs, uvm_comparer _comparer);
 endfunction
 
-function string {:NAME:}_seq_item::convert2string();
+function string {:NAME:}::convert2string();
 endfunction
 
-function void {:NAME:}_seq_item::do_print(uvm_printer printer);
+function void {:NAME:}::do_print(uvm_printer printer);
 endfunction
 
-function void {:NAME:}_seq_item::do_pack(uvm_packer packer);
+function void {:NAME:}::do_pack(uvm_packer rhs);
 endfunction
 
-function void {:NAME:}_seq_item::do_unpack(uvm_packer packer);
+function void {:NAME:}::do_unpack(uvm_packer rhs);
 endfunction
-
-function void {:NAME:}_seq_item::do_record(uvm_recorder recorder);
-endfunction
-
-
 
 `endif

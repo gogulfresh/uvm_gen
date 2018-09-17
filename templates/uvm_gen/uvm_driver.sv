@@ -1,26 +1,56 @@
 `ifndef _{:UPPERNAME:}_DRIVER_SV_
 `define _{:UPPERNAME:}_DRIVER_SV_
 
+////////////////////////////////////////////////////////////////////////////////
+// Class Description
+////////////////////////////////////////////////////////////////////////////////
+class {:NAME:}Cfg extends uvm_object;
+
+    // UVM Factory Registration Macro
+    //
+    `uvm_object_utils({:NAME:}Cfg)
+
+    //------------------------------------------
+    // Data Members
+    //------------------------------------------
+
+    // include the functional coverage or not
+    bit has_functional_coverage = 0;
+
+    // include the scoreboard or not
+    bit has_scoreboard = 0;
+
+    //------------------------------------------
+    // Methods
+    //------------------------------------------
+
+    function new(string name = "{:NAME:}Cfg");
+        super.new(name);
+    endfunction
+
+endclass:{:NAME:}Cfg
 
 ////////////////////////////////////////////////////////////////////////////////
 // Class Description
 ////////////////////////////////////////////////////////////////////////////////
-class {:NAME:}_driver #(type VIF_TYPE = virtual {:NAME:}_if) extends uvm_driver #({:TRANSACTION:});
+class {:NAME:}Driver extends uvm_driver #({:TRANSACTION:});
 
+    {:TRANSACTION:} req;
+    {:NAME:}Cfg  mCfg;
 
-    `uvm_component_utils({:NAME:}_driver)
+    `uvm_component_utils_begin({:NAME:}Driver)
+    `uvm_component_utils_end
 
     // Attributes
-    VIF_TYPE vif;
+    virtual {:NAME:}If vif;
 
     // Methods
-    extern function new (string name="{:NAME:}_driver", uvm_component parent=null);
+    extern function new (string name="{:NAME:}Driver", uvm_component parent=null);
     extern function void build_phase(uvm_phase phase);
     extern task run_phase (uvm_phase phase);
-    extern task drive_item({:TRANSACTION:} item);
-    extern task reset_signals({:TRANSACTION:} item);
+    extern task DriveItem({:TRANSACTION:} item);
 
-endclass : {:NAME:}_driver
+endclass : {:NAME:}Driver
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementation
@@ -28,38 +58,40 @@ endclass : {:NAME:}_driver
 //------------------------------------------------------------------------------
 // Constructor
 //
-function {:NAME:}_driver::new(string name="{:NAME:}_driver", uvm_component parent=null);
+function {:NAME:}Driver::new(string name="{:NAME:}Driver", uvm_component parent=null);
     super.new(name, parent);
+    this.mCfg = new();
 endfunction : new
 
 //------------------------------------------------------------------------------
 // Build
 //
-function void {:NAME:}_driver::build_phase(uvm_phase phase);
+function void {:NAME:}Driver::build_phase(uvm_phase phase);
     super.build_phase(phase);
 
-    //if (!(uvm_config_db #({:NAME:}Cfg)::get(this, "", "mCfg", mCfg))) begin
-    //    `uvm_fatal("CONFIG_LOAD", {get_full_name(), ".mCfg get failed!!!"})
-    //end
+    if (!(uvm_config_db #({:NAME:}Cfg)::get(this, "", "mCfg", mCfg))) begin
+        `uvm_fatal("CONFIG_LOAD", {get_full_name(), ".mCfg get failed!!!"})
+    end
 
-    //if (!uvm_config_db#(virtual {:NAME:}If)::get(this, "", "{:NAME:}Vif", this.vif)) begin
-    //    `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".vif"})
-    //end
+    if (!uvm_config_db#(virtual {:NAME:}If)::get(this, "", "{:NAME:}Vif", this.vif)) begin
+        `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".vif"})
+    end
 endfunction : build_phase
 
 //------------------------------------------------------------------------------
 // Get and process items
 //
-task {:NAME:}_driver::run_phase(uvm_phase phase);
-    reset_signals();
+task {:NAME:}Driver::run_phase(uvm_phase phase);
+    {:INIT_HARDWARE:}
     forever begin
         // Get the next data item from sequencer
         seq_item_port.get_next_item(req);
         phase.raise_objection(this);
         // Execute the item
-        this.drive_item(req);
+        this.DriveItem(req);
 
     `ifdef USING_RESPONSE
+        {:CONSTRUCT_RSP_ITEM:} rsp;
         rsp.set_id_info(req);
         // response
         // seq_item_port.item_done(rsp);
@@ -75,12 +107,8 @@ endtask : run_phase
 //------------------------------------------------------------------------------
 // Drive sequence item
 //
-task {:NAME:}_driver::reset_signals({:TRANSACTION:} item);
+task {:NAME:}Driver::DriveItem({:TRANSACTION:} item);
     // Add your logic here
-endtask : reset_signals 
-
-task {:NAME:}_driver::drive_item({:TRANSACTION:} item);
-    // Add your logic here
-endtask : drive_item
+endtask : DriveItem
 
 `endif
