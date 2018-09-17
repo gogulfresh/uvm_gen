@@ -74,12 +74,21 @@ function <SID>DirName(path)
 endfunction
 
 " Default templates directory
-let s:default_template_dir = <SID>DirName(<SID>DirName(expand("<sfile>"))) . "templates"
+let s:default_template_dir = <SID>DirName(<SID>DirName(expand("<sfile>"))) . "templates/easier_uvm_guidelines"
 
 " Makes a single [variable] expansion, using [value] as replacement.
 "
 function <SID>TExpand(variable, value)
     silent execute "%s/{:" . a:variable . ":}/" .  a:value . "/g"
+endfunction
+
+function <SID>TRemoveIfContent()
+    silent execute "g/{:if:.*:}/;/{:endif:.*:}/d"
+endfunction
+
+function <SID>TRemoveIfEndifCondition(variable)
+    silent execute "g/{:if:" .a:variable . ":}/d"
+    silent execute "g/{:endif:" .a:variable . ":}/d"
 endfunction
 
 " Puts the cursor either at the first line of the file or in the place of
@@ -153,12 +162,16 @@ function! UVMEnv(name)
     let a:template = s:default_template_dir . "/" . a:template_filename
     let a:uppername = toupper(a:name)
     let a:lowername = tolower(a:name)
+    let a:transaction = a:name . "seq_item"
 
     " call s:UVMAddHeader()
     call <SID>TLoadCmd(a:template)
     call <SID>TExpand("NAME", a:name)
     call <SID>TExpand("UPPERNAME", a:uppername)
     call <SID>TExpand("LOWERNAME", a:lowername)
+    call <SID>TExpand("TRANSACTION", a:transaction)
+    call <SID>TRemoveIfEndifCondition("SINGLE_AGENT")
+    call <SID>TRemoveIfContent()
     call <SID>TPutCursor()
 endfunction
 
@@ -191,12 +204,14 @@ function! UVMAgent(name)
     let a:template = s:default_template_dir . "/" . a:template_filename
     let a:uppername = toupper(a:name)
     let a:lowername = tolower(a:name)
+    let a:transaction = a:name . "_seq_item"
 
     " call s:UVMAddHeader()
     call <SID>TLoadCmd(a:template)
     call <SID>TExpand("NAME", a:name)
     call <SID>TExpand("UPPERNAME", a:uppername)
     call <SID>TExpand("LOWERNAME", a:lowername)
+    call <SID>TExpand("TRANSACTION", a:transaction)
     call <SID>TPutCursor()
 endfunction
 
@@ -205,17 +220,35 @@ function! UVMDriver(name)
     let a:template = s:default_template_dir . "/" . a:template_filename
     let a:uppername = toupper(a:name)
     let a:lowername = tolower(a:name)
+    let a:transaction = a:name . "_seq_item"
 
     " call s:UVMAddHeader()
     call <SID>TLoadCmd(a:template)
     call <SID>TExpand("NAME", a:name)
     call <SID>TExpand("UPPERNAME", a:uppername)
     call <SID>TExpand("LOWERNAME", a:lowername)
+    call <SID>TExpand("TRANSACTION", a:transaction)
     call <SID>TPutCursor()
 endfunction
 
 function! UVMMon(name)
     let a:template_filename = "uvm_monitor.sv"
+    let a:template = s:default_template_dir . "/" . a:template_filename
+    let a:uppername = toupper(a:name)
+    let a:lowername = tolower(a:name)
+    let a:transaction = a:name . "_seq_item"
+
+    " call s:UVMAddHeader()
+    call <SID>TLoadCmd(a:template)
+    call <SID>TExpand("NAME", a:name)
+    call <SID>TExpand("UPPERNAME", a:uppername)
+    call <SID>TExpand("LOWERNAME", a:lowername)
+    call <SID>TExpand("TRANSACTION", a:transaction)
+    call <SID>TPutCursor()
+endfunction
+
+function! UVMSeq(name)
+    let a:template_filename = "uvm_sequence.sv"
     let a:template = s:default_template_dir . "/" . a:template_filename
     let a:uppername = toupper(a:name)
     let a:lowername = tolower(a:name)
@@ -228,8 +261,8 @@ function! UVMMon(name)
     call <SID>TPutCursor()
 endfunction
 
-function! UVMSeq(name)
-    let a:template_filename = "uvm_sequence.sv"
+function! UVMSqr(name)
+    let a:template_filename = "uvm_sequencer.sv"
     let a:template = s:default_template_dir . "/" . a:template_filename
     let a:uppername = toupper(a:name)
     let a:lowername = tolower(a:name)
@@ -298,6 +331,20 @@ function! UVMInterface(name)
     call <SID>TPutCursor()
 endfunction
 
+function! UVMPackage(name)
+    let a:template_filename = "uvm_package.sv"
+    let a:template = s:default_template_dir . "/" . a:template_filename
+    let a:uppername = toupper(a:name)
+    let a:lowername = tolower(a:name)
+
+    " call s:UVMAddHeader()
+    call <SID>TLoadCmd(a:template)
+    call <SID>TExpand("NAME", a:name)
+    call <SID>TExpand("UPPERNAME", a:uppername)
+    call <SID>TExpand("LOWERNAME", a:lowername)
+    call <SID>TPutCursor()
+endfunction
+
 " According to the args, call different methods
 "
 function UVMGen(type, name)
@@ -309,7 +356,7 @@ function UVMGen(type, name)
         call UVMAgent(a:name)
     elseif (a:type== "config")
         call UVMConfig(a:name)
-    elseif (a:type== "interface")
+    elseif (a:type== "interface" || a:type == "if")
         call UVMInterface(a:name)
     elseif (a:type== "driver")
         call UVMDriver(a:name)
@@ -319,6 +366,8 @@ function UVMGen(type, name)
         call UVMMon(a:name)
     elseif (a:type== "sequence") || (a:type == "seq")
         call UVMSeq(a:name)
+    elseif (a:type== "sequencer") || (a:type == "sqr")
+        call UVMSqr(a:name)
     elseif (a:type== "test")
         call UVMTest(a:name)
     elseif (a:type== "top")
@@ -329,7 +378,7 @@ function UVMGen(type, name)
         echo "The first ARG, Please following the instructions:"
         echo " agent            - Generate UVM Agent"
         echo " config           - Generate UVM Config"
-        echo " interface        - Generate UVM Interface"
+        echo " interface / if   - Generate UVM Interface"
         echo " driver           - Generate UVM Driver"
         echo " env              - Generate UVM Env"
         echo " monitor / mon    - Generate UVM Monitor"
@@ -347,17 +396,23 @@ endf
 
 " === plugin commands === {{{
 command -nargs=0 UVMAddHeader call s:UVMAddHeader()
-command -nargs=1 UVMEnv call UVMEnv("<args>")
-command -nargs=1 UVMTest call UVMTest("<args>")
-command -nargs=1 UVMAgent call UVMAgent("<args>")
-command -nargs=1 UVMDriver call UVMDriver("<args>")
-command -nargs=1 UVMMon call UVMMon("<args>")
-command -nargs=1 UVMSeq call UVMSeq("<args>")
-command -nargs=1 UVMTr call UVMTr("<args>")
-command -nargs=1 UVMItem call UVMTr("<args>")
-command -nargs=1 UVMTop call UVMTop("<args>")
-command -nargs=1 UVMConfig call UVMConfig("<args>")
+command -nargs=1 UVMEnv       call UVMEnv("<args>")
+command -nargs=1 UVMTest      call UVMTest("<args>")
+command -nargs=1 UVMAgent     call UVMAgent("<args>")
+command -nargs=1 UVMDriver    call UVMDriver("<args>")
+command -nargs=1 UVMDrv       call UVMDriver("<args>")
+command -nargs=1 UVMMonitor   call UVMMon("<args>")
+command -nargs=1 UVMMon       call UVMMon("<args>")
+command -nargs=1 UVMSeq       call UVMSeq("<args>")
+command -nargs=1 UVMTr        call UVMTr("<args>")
+command -nargs=1 UVMItem      call UVMTr("<args>")
+command -nargs=1 UVMSequencer call UVMSqr("<args>")
+command -nargs=1 UVMSqr       call UVMSqr("<args>")
+command -nargs=1 UVMTop       call UVMTop("<args>")
+command -nargs=1 UVMConfig    call UVMConfig("<args>")
 command -nargs=1 UVMInterface call UVMInterface("<args>")
+command -nargs=1 UVMPackage   call UVMPackage("<args>")
+command -nargs=1 UVMPkg       call UVMPackage("<args>")
 command -nargs=+ -complete=customlist,ReturnTypesList UVMGen call UVMGen(<f-args>)
 " }}}
 
